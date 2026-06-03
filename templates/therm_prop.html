@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+{% block title %}Propriétés — EOS Compare{% endblock %}
+{% block page_title %}Propriétés{% endblock %}
+{% block page_subtitle %}Données thermodynamiques des composants.{% endblock %}
+
+{% block content %}
+
+<div class="stats-grid compact-grid">
+    <div class="stat-card">
+        <span class="stat-label">Composants</span>
+        <div class="stat-num" id="gasCount">0</div>
+        <div class="stat-note">Disponibles</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Variables</span>
+        <div class="stat-num">Tc, Pc</div>
+        <div class="stat-note">Propriétés critiques</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Variables</span>
+        <div class="stat-num">ω, Zc</div>
+        <div class="stat-note">Facteurs acentriques</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Base des composants</h2>
+        <span class="tag" id="gasCountBadge">0 entrées</span>
+    </div>
+    <div class="table-wrap">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Composant</th>
+                    <th>Formule</th>
+                    <th>M (g/mol)</th>
+                    <th>Tc (K)</th>
+                    <th>Pc (bar)</th>
+                    <th>ω</th>
+                    <th>Zc</th>
+                    <th>Vc (cm³/mol)</th>
+                    <th>μ (D)</th>
+                </tr>
+            </thead>
+            <tbody id="gas-table"></tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card soft-card">
+    <div class="card-head">
+        <h2>Constantes universelles</h2>
+        <span class="tag">essentiel</span>
+    </div>
+    <div class="table-wrap">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>Constante</th>
+                    <th>Symbole</th>
+                    <th>Valeur</th>
+                    <th>Unité</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Constante des gaz parfaits</td>
+                    <td>R</td>
+                    <td>8.314</td>
+                    <td>J / mol·K</td>
+                </tr>
+                <tr>
+                    <td>Température réduite</td>
+                    <td>T<sub>r</sub></td>
+                    <td>T / T<sub>c</sub></td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>Pression réduite</td>
+                    <td>P<sub>r</sub></td>
+                    <td>P / P<sub>c</sub></td>
+                    <td>—</td>
+                </tr>
+                <tr>
+                    <td>Facteur de compressibilité critique</td>
+                    <td>Z<sub>c</sub></td>
+                    <td>P<sub>c</sub>·V<sub>c</sub> / (R·T<sub>c</sub>)</td>
+                    <td>—</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+// Base de données étendue avec 25+ composants
+const gasData = [
+    // ========== ALCANES ==========
+    { name:"Méthane", formula:"CH₄", M:16.04, Tc:190.6, Pc:46.1, omega:0.011, Zc:0.288, Vc:99.2, mu:0 },
+    { name:"Éthane", formula:"C₂H₆", M:30.07, Tc:305.3, Pc:48.7, omega:0.099, Zc:0.285, Vc:148.0, mu:0 },
+    { name:"Propane", formula:"C₃H₈", M:44.10, Tc:369.8, Pc:42.5, omega:0.153, Zc:0.281, Vc:200.0, mu:0 },
+    { name:"Butane", formula:"C₄H₁₀", M:58.12, Tc:425.1, Pc:38.0, omega:0.200, Zc:0.274, Vc:255.0, mu:0 },
+    { name:"Pentane", formula:"C₅H₁₂", M:72.15, Tc:469.7, Pc:33.7, omega:0.252, Zc:0.269, Vc:311.0, mu:0 },
+    { name:"Hexane", formula:"C₆H₁₄", M:86.18, Tc:507.6, Pc:30.3, omega:0.301, Zc:0.264, Vc:370.0, mu:0 },
+    { name:"Heptane", formula:"C₇H₁₆", M:100.20, Tc:540.3, Pc:27.4, omega:0.350, Zc:0.260, Vc:432.0, mu:0 },
+    { name:"Octane", formula:"C₈H₁₈", M:114.23, Tc:568.8, Pc:24.9, omega:0.398, Zc:0.256, Vc:492.0, mu:0 },
+    
+    // ========== GAZ INDUSTRIELS ==========
+    { name:"Azote", formula:"N₂", M:28.01, Tc:126.2, Pc:34.0, omega:0.039, Zc:0.290, Vc:89.8, mu:0 },
+    { name:"Oxygène", formula:"O₂", M:32.00, Tc:154.6, Pc:50.4, omega:0.022, Zc:0.288, Vc:73.4, mu:0 },
+    { name:"Hydrogène", formula:"H₂", M:2.016, Tc:33.2, Pc:13.0, omega:-0.216, Zc:0.305, Vc:64.3, mu:0 },
+    { name:"Hélium", formula:"He", M:4.003, Tc:5.2, Pc:2.27, omega:-0.387, Zc:0.301, Vc:57.6, mu:0 },
+    { name:"Argon", formula:"Ar", M:39.95, Tc:150.9, Pc:48.6, omega:0.000, Zc:0.291, Vc:74.6, mu:0 },
+    
+    // ========== COMPOSÉS CARBONÉS ==========
+    { name:"Monoxyde de carbone", formula:"CO", M:28.01, Tc:132.9, Pc:35.0, omega:0.049, Zc:0.295, Vc:93.1, mu:0.11 },
+    { name:"Dioxyde de carbone", formula:"CO₂", M:44.01, Tc:304.1, Pc:73.8, omega:0.239, Zc:0.274, Vc:94.0, mu:0 },
+    
+    // ========== COMPOSÉS SOUFRÉS ET AZOTÉS ==========
+    { name:"Sulfure d'hydrogène", formula:"H₂S", M:34.08, Tc:373.5, Pc:89.6, omega:0.100, Zc:0.284, Vc:98.5, mu:0.97 },
+    { name:"Ammoniac", formula:"NH₃", M:17.03, Tc:405.5, Pc:113.6, omega:0.250, Zc:0.242, Vc:72.5, mu:1.47 },
+    
+    // ========== COMPOSÉS POLAIRES ==========
+    { name:"Eau", formula:"H₂O", M:18.02, Tc:647.1, Pc:220.6, omega:0.345, Zc:0.229, Vc:55.9, mu:1.85 },
+    { name:"Méthanol", formula:"CH₃OH", M:32.04, Tc:512.6, Pc:80.9, omega:0.564, Zc:0.224, Vc:117.8, mu:1.70 },
+    { name:"Éthanol", formula:"C₂H₅OH", M:46.07, Tc:514.0, Pc:61.4, omega:0.644, Zc:0.240, Vc:167.0, mu:1.69 },
+    { name:"Acétone", formula:"C₃H₆O", M:58.08, Tc:508.2, Pc:47.0, omega:0.307, Zc:0.232, Vc:209.0, mu:2.88 },
+    
+    // ========== AROMATIQUES ==========
+    { name:"Benzène", formula:"C₆H₆", M:78.11, Tc:562.2, Pc:48.9, omega:0.212, Zc:0.271, Vc:259.0, mu:0 },
+    { name:"Toluène", formula:"C₇H₈", M:92.14, Tc:591.8, Pc:41.1, omega:0.263, Zc:0.264, Vc:316.0, mu:0.36 },
+];
+
+// Remplir le tableau
+const tbody = document.getElementById("gas-table");
+gasData.forEach(g => {
+    tbody.innerHTML += `
+        <tr>
+            <td><strong>${g.name}</strong></td>
+            <td>${g.formula}</td>
+            <td>${g.M.toFixed(2)}</td>
+            <td>${g.Tc}</td>
+            <td>${g.Pc}</td>
+            <td>${g.omega.toFixed(3)}</td>
+            <td>${g.Zc.toFixed(3)}</td>
+            <td>${g.Vc}</td>
+            <td>${g.mu > 0 ? g.mu.toFixed(2) : '-'}</td>
+        </tr>`;
+});
+
+// Mettre à jour les compteurs dynamiques
+const totalGases = gasData.length;
+document.getElementById('gasCount').textContent = totalGases;
+document.getElementById('gasCountBadge').textContent = totalGases + ' entrées';
+</script>
+
+{% endblock %}

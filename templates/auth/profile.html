@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Mon profil - EOS Compare{% endblock %}
+{% block page_title %}Mon profil{% endblock %}
+{% block page_subtitle %}Gérez vos informations personnelles{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-head">
+        <h2>Informations personnelles</h2>
+    </div>
+    <form method="POST" action="{{ url_for('auth.profile') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Nom d'utilisateur</label>
+                <input type="text" value="{{ user.username }}" disabled style="opacity: 0.7;">
+            </div>
+            <div class="form-group">
+                <label>Email</label>
+                <input type="email" value="{{ user.email }}" disabled style="opacity: 0.7;">
+            </div>
+            <div class="form-group">
+                <label>Prénom</label>
+                <input type="text" name="first_name" value="{{ user.first_name or '' }}" placeholder="Votre prénom">
+            </div>
+            <div class="form-group">
+                <label>Nom</label>
+                <input type="text" name="last_name" value="{{ user.last_name or '' }}" placeholder="Votre nom">
+            </div>
+            <div class="form-group">
+                <label>Institution</label>
+                <input type="text" name="institution" value="{{ user.institution or '' }}" placeholder="Université, entreprise...">
+            </div>
+            <div class="form-group">
+                <label>Bio</label>
+                <textarea name="bio" rows="3" placeholder="Parlez-nous de vous..." style="width:100%; padding:10px; border-radius:8px;">{{ user.bio or '' }}</textarea>
+            </div>
+        </div>
+        <div class="btn-actions">
+            <button type="submit" class="btn btn-primary">💾 Enregistrer</button>
+            <a href="{{ url_for('auth.change_password_page') }}" class="btn btn-secondary">🔑 Changer mot de passe</a>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Statistiques</h2>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-label">Calculs effectués</span>
+            <div class="stat-num">{{ user.calculations_count }}</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Membres depuis</span>
+            <div class="stat-num">{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '-' }}</div>
+        </div>
+        <div class="stat-card">
+            <span class="stat-label">Dernière connexion</span>
+            <div class="stat-num">{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else '-' }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}

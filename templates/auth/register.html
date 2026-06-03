@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Créer un compte — EOS Compare{% endblock %}
+
+{% block content %}
+<section class="auth-stage">
+  <div class="auth-showcase">
+    <div class="auth-brand">
+      <span class="auth-brand-eos">EOS</span>
+      <span class="auth-brand-compare">Compare</span>
+    </div>
+    <span class="hero-badge">Créer • Se connecter • Calculer</span>
+    <h1>Crée ton compte puis lance tes calculs.</h1>
+    <p>Un compte. Un login. Ensuite tout le tableau de bord est à toi.</p>
+
+    <div class="auth-kpis">
+      <div class="auth-kpi"><strong>Vm</strong><span>clair</span></div>
+      <div class="auth-kpi"><strong>Z</strong><span>lisible</span></div>
+      <div class="auth-kpi"><strong>P-V</strong><span>visuel</span></div>
+    </div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="panel-head">
+      <h2>Créer un compte</h2>
+      <p>Très court. Très simple.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <div class="form-group form-gap">
+        <label>Nom</label>
+        <input type="text" name="username" placeholder="Nom Prénom" required autofocus />
+      </div>
+      <div class="form-group form-gap">
+        <label>Adresse email</label>
+        <input type="email" name="email" placeholder="exemple@gmail.com" required />
+      </div>
+      <div class="form-group form-gap-lg">
+        <label>Mot de passe</label>
+        <input type="password" name="password" placeholder="6 caractères minimum" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">Créer le compte</button>
+    </form>
+
+    <div class="auth-foot">
+      <span>Déjà un compte ?</span>
+      <a href="{{ url_for('auth.login') }}">Connexion</a>
+    </div>
+  </div>
+</section>
+
+<!-- Bouton About Us SOUS la carte, centré sur la page -->
+<div class="about-us-footer">
+  <a href="{{ url_for('main.apropos') }}" class="about-us-btn">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    About Us
+  </a>
+</div>
+
+<style>
+.about-us-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+  padding-bottom: 2rem;
+}
+.about-us-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  background: transparent;
+  transition: all 0.2s ease;
+}
+.about-us-btn:hover {
+  background: rgba(255,255,255,0.07);
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+</style>
+{% endblock %}

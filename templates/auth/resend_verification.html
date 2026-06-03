@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Renvoyer le lien — EOS Compare{% endblock %}
+
+{% block content %}
+<section class="auth-stage">
+  <div class="auth-showcase">
+    <div class="auth-brand">
+      <span class="auth-brand-eos">EOS</span>
+      <span class="auth-brand-compare">Compare</span>
+    </div>
+    <span class="hero-badge">Vérification • Email • Activation</span>
+    <h1>Vérifie ton adresse email.</h1>
+    <p>Un email de vérification est nécessaire pour accéder à toutes les fonctionnalités de la plateforme.</p>
+    <div class="auth-kpis">
+      <div class="auth-kpi"><strong>24h</strong><span>validité</span></div>
+      <div class="auth-kpi"><strong>✉</strong><span>email</span></div>
+      <div class="auth-kpi"><strong>1×</strong><span>clic</span></div>
+    </div>
+  </div>
+
+  <div class="auth-panel">
+    <div class="panel-head">
+      <div class="panel-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+      </div>
+      <h2>Renvoyer le lien</h2>
+      <p>Entrez votre email pour recevoir un nouveau lien de vérification.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.resend_verification') }}">
+      <div class="form-group form-gap-lg">
+        <label>Adresse email du compte</label>
+        <input type="email" name="email"
+               placeholder="exemple@gmail.com"
+               value="{{ prefill_email }}"
+               required autofocus />
+        <span class="field-hint">
+          L'email doit correspondre à un compte existant non encore vérifié.
+        </span>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        Envoyer un nouveau lien
+      </button>
+    </form>
+
+    <div class="auth-info-box">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Le lien est valable <strong>24 heures</strong>. Si vous ne recevez rien, vérifiez vos spams.
+    </div>
+
+    <div class="auth-foot">
+      <a href="{{ url_for('auth.login') }}" class="back-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        Retour à la connexion
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+.panel-icon {
+  width:56px; height:56px; border-radius:16px;
+  background:linear-gradient(135deg,rgba(6,182,212,0.15),rgba(124,58,237,0.1));
+  border:1px solid rgba(6,182,212,0.25);
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto 16px; color:#67e8f9;
+}
+.field-hint { display:block; margin-top:6px; font-size:0.8rem; color:var(--text-muted,rgba(148,163,184,0.7)); }
+.auth-info-box {
+  display:flex; align-items:flex-start; gap:9px;
+  margin-top:20px; padding:12px 16px; border-radius:10px;
+  background:rgba(6,182,212,0.05); border:1px solid rgba(6,182,212,0.15);
+  font-size:0.83rem; color:rgba(148,163,184,0.85); line-height:1.5;
+}
+.auth-info-box svg { flex-shrink:0; margin-top:2px; color:#67e8f9; }
+.auth-info-box strong { color:#e2e8f0; }
+.back-link { display:inline-flex; align-items:center; gap:6px; font-size:0.87rem; color:rgba(148,163,184,0.75); text-decoration:none; font-weight:600; transition:color 0.2s; }
+.back-link:hover { color:#e2e8f0; }
+</style>
+{% endblock %}

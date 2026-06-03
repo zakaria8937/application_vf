@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Gestion des utilisateurs - Admin{% endblock %}
+{% block page_title %}Utilisateurs{% endblock %}
+{% block page_subtitle %}Gérer les comptes{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-head">
+        <h2>Liste des utilisateurs</h2>
+        <form method="GET" style="display: flex; gap: 8px;">
+            <input type="text" name="search" value="{{ search }}" 
+                   placeholder="Rechercher..." style="padding: 8px 12px; border-radius: 8px;">
+            <button type="submit" class="btn btn-primary">🔍</button>
+        </form>
+    </div>
+    
+    <div class="table-wrap">
+        <table class="results-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Email</th>
+                    <th>Rôle</th>
+                    <th>Inscription</th>
+                    <th>Dernière connexion</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>
+                        <select class="role-select" data-user-id="{{ user.id }}" 
+                                {% if user.id == current_user.id %}disabled{% endif %}>
+                            <option value="student" {% if user.role == 'student' %}selected{% endif %}>Étudiant</option>
+                            <option value="teacher" {% if user.role == 'teacher' %}selected{% endif %}>Enseignant</option>
+                            <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                        </select>
+                    </td>
+                    <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '-' }}</td>
+                    <td>{{ user.last_login.strftime('%d/%m/%Y %H:%M') if user.last_login else '-' }}</td>
+                    <td>
+                        <span class="badge {% if user.is_verified %}badge-pr{% else %}badge-vdw{% endif %}">
+                            {% if user.is_verified %}✅ Vérifié{% else %}⏳ Non vérifié{% endif %}
+                        </span>
+                        {% if not user.is_active %}
+                        <span class="badge badge-ig">🚫 Désactivé</span>
+                        {% endif %}
+                    </td>
+                    <td style="display: flex; gap: 6px; flex-wrap: wrap;">
+                        <button class="btn-verify btn-sm" data-user-id="{{ user.id }}"
+                                {% if user.id == current_user.id %}disabled{% endif %}>
+                            {% if user.is_verified %}🔓{% else %}✅{% endif %}
+                        </button>
+                        <button class="btn-toggle btn-sm" data-user-id="{{ user.id }}"
+                                {% if user.id == current_user.id %}disabled{% endif %}>
+                            {% if user.is_active %}🔒{% else %}🔓{% endif %}
+                        </button>
+                        <button class="btn-delete btn-sm btn-danger" data-user-id="{{ user.id }}"
+                                data-username="{{ user.username }}"
+                                {% if user.id == current_user.id %}disabled{% endif %}>
+                            🗑️
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    {% if pagination and pagination.pages > 1 %}
+    <div class="pagination">
+        {% if pagination.has_prev %}
+            <a href="{{ url_for('admin.users', page=pagination.prev_num, search=search) }}">← Précédent</a>
+        {% endif %}
+        <span class="active">{{ pagination.page }}</span>
+        {% if pagination.has_next %}
+            <a href="{{ url_for('admin.users', page=pagination.next_num, search=search) }}">Suivant →</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.querySelectorAll('.role-select').forEach(select => {
+    select.addEventListener('change', async function() {
+        const userId = this.dataset.userId;
+        const role = this.value;
+        
+        const response = await fetch(`/admin/users/${userId}/role`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role })
+        });
+        
+        const result = await response.json();
+        if (result.success) {
+            location.reload();
+        } else {
+            alert(result.error);
+        }
+    });
+});
+
+document.querySelectorAll('.btn-verify').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const userId = this.dataset.userId;
+        const response = await fetch(`/admin/users/${userId}/toggle-verify`, { method: 'POST' });
+        const result = await response.json();
+        if (result.success) location.reload();
+    });
+});
+
+document.querySelectorAll('.btn-toggle').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const userId = this.dataset.userId;
+        const response = await fetch(`/admin/users/${userId}/toggle-active`, { method: 'POST' });
+        const result = await response.json();
+        if (result.success) location.reload();
+    });
+});
+
+document.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const username = this.dataset.username;
+        if (confirm(`Supprimer définitivement ${username} ?`)) {
+            const userId = this.dataset.userId;
+            const response = await fetch(`/admin/users/${userId}/delete`, { method: 'POST' });
+            const result = await response.json();
+            if (result.success) location.reload();
+        }
+    });
+});
+</script>
+
+<style>
+.btn-sm {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+.btn-danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+}
+.btn-danger:hover {
+    background: rgba(239, 68, 68, 0.4);
+}
+.role-select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: var(--bg-soft);
+    color: var(--text);
+    border: 1px solid var(--line);
+}
+</style>
+{% endblock %}

@@ -1,0 +1,193 @@
+{% set is_auth = request.endpoint and (request.endpoint.startswith('auth.') or (request.endpoint == 'main.apropos' and not current_user.is_authenticated)) %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}EOS Compare{% endblock %}</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous"
+    onload="renderMathInElement(document.body, {delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script>
+    (function () {
+      const savedTheme = localStorage.getItem("eos-theme") || "dark";
+      document.documentElement.dataset.theme = savedTheme;
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="{{ 'auth-body' if is_auth else 'app-body' }}">
+
+  {% if not is_auth %}
+  <!-- ═══════ Top Navbar ═══════ -->
+  <nav class="topnav">
+    <a href="{{ url_for('main.index') }}" class="topnav-brand">
+      <div class="brand-mark">∿</div>
+      <div class="topnav-brand-text">
+        <span class="topnav-brand-eos">EOS</span>
+        <span class="topnav-brand-compare">COMPARE</span>
+      </div>
+    </a>
+
+    <div class="topnav-links">
+      <a href="{{ url_for('main.index') }}" class="{{ 'active' if request.endpoint == 'main.index' else '' }}">Tableau de bord</a>
+      <a href="{{ url_for('main.eos_explorer') }}" class="{{ 'active' if request.endpoint == 'main.eos_explorer' else '' }}">Explorateur EOS</a>
+      <a href="{{ url_for('main.isotherms') }}" class="{{ 'active' if request.endpoint == 'main.isotherms' else '' }}">Isothermes</a>
+      <a href="{{ url_for('main.z_factor') }}" class="{{ 'active' if request.endpoint == 'main.z_factor' else '' }}">Facteur Z</a>
+      <a href="{{ url_for('vle.vle_index') }}" class="{{ 'active' if request.endpoint == 'vle.vle_index' else '' }}">VLE</a>
+      <a href="{{ url_for('main.therm_prop') }}" class="{{ 'active' if request.endpoint == 'main.therm_prop' else '' }}">Propriétés</a>
+      <!-- SUPPRIMÉ : Historique et À propos de la barre supérieure -->
+      {% if current_user.is_authenticated and current_user.role == 'admin' %}
+      <a href="{{ url_for('admin.dashboard') }}" class="{{ 'active' if request.endpoint and request.endpoint.startswith('admin.') else '' }}">
+        👑 Admin
+      </a>
+      {% endif %}
+    </div>
+
+    <div class="topnav-right">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Changer de thème">
+        <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+      </button>
+      {% if current_user.is_authenticated %}
+      <div class="topnav-user" id="user-menu-wrapper">
+        <button class="user-avatar" id="user-menu-btn" type="button" aria-label="Menu utilisateur" aria-haspopup="true" aria-expanded="false">
+          {{ current_user.username[0].upper() }}
+        </button>
+        <div class="user-dropdown" id="user-dropdown" hidden>
+          <div class="user-dropdown-name">{{ current_user.username }}</div>
+          
+          <!-- Mon profil -->
+          <div class="user-dropdown-section">
+            <div class="user-dropdown-section-title">Compte</div>
+            <a href="{{ url_for('auth.profile') }}" class="user-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="12" r="4"/></svg>
+              Mon profil
+            </a>
+            <a href="{{ url_for('auth.change_password_page') }}" class="user-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              Changer mot de passe
+            </a>
+          </div>
+          
+          <!-- Historique DANS le menu -->
+          <div class="user-dropdown-section">
+            <div class="user-dropdown-section-title">Activité</div>
+            <a href="{{ url_for('main.history') }}" class="user-dropdown-item">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Historique
+            </a>
+          </div>
+          
+          <!-- Thème -->
+          <div class="user-dropdown-section">
+            <div class="user-dropdown-section-title">Préférences</div>
+            <button id="theme-dropdown-toggle" class="user-dropdown-item" style="width:100%; text-align:left;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+              Thème
+            </button>
+          </div>
+          
+          <!-- Déconnexion -->
+          <div class="user-dropdown-divider"></div>
+          <a href="{{ url_for('auth.logout') }}" class="user-dropdown-item user-dropdown-logout">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Déconnexion
+          </a>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Mobile hamburger -->
+    <button class="topnav-burger" id="nav-burger" type="button" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+  {% endif %}
+
+  <div class="{{ 'auth-shell' if is_auth else 'app-shell' }}">
+
+    <main class="{{ 'auth-main' if is_auth else 'content' }}">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack">
+            {% for cat, msg in messages %}
+              <div class="flash flash-{{ cat }}">{{ msg }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      {% if not is_auth %}
+      {% set subtitle = self.page_subtitle()|trim %}
+      {% set ptitle = self.page_title()|trim %}
+      {% if ptitle %}
+      <header class="page-header">
+        <div>
+          <div class="eyebrow">EOS Workspace</div>
+          <h1>{{ ptitle }}</h1>
+          {% if subtitle %}
+            <p class="subtitle">{{ subtitle|safe }}</p>
+          {% endif %}
+        </div>
+        {% block page_actions %}{% endblock %}
+      </header>
+      {% endif %}
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+  <script>
+    // Mobile nav toggle
+    const burger = document.getElementById('nav-burger');
+    const topnav = document.querySelector('.topnav');
+    if (burger && topnav) {
+      burger.addEventListener('click', () => topnav.classList.toggle('open'));
+      topnav.querySelectorAll('.topnav-links a').forEach(link => {
+        link.addEventListener('click', () => topnav.classList.remove('open'));
+      });
+      document.addEventListener('click', (e) => {
+        if (!topnav.contains(e.target)) topnav.classList.remove('open');
+      });
+    }
+    
+    // User dropdown toggle
+    const userBtn = document.getElementById('user-menu-btn');
+    const userDropdown = document.getElementById('user-dropdown');
+    if (userBtn && userDropdown) {
+      userBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = userDropdown.hidden;
+        userDropdown.hidden = !isHidden;
+        userBtn.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+      });
+      document.addEventListener('click', () => {
+        userDropdown.hidden = true;
+        userBtn.setAttribute('aria-expanded', 'false');
+      });
+      userDropdown.addEventListener('click', (e) => e.stopPropagation());
+    }
+    
+    // Theme toggle from dropdown
+    const themeDropdownToggle = document.getElementById('theme-dropdown-toggle');
+    if (themeDropdownToggle) {
+      themeDropdownToggle.addEventListener('click', () => {
+        const themeBtn = document.getElementById('theme-toggle');
+        if (themeBtn) themeBtn.click();
+        userDropdown.hidden = true;
+      });
+    }
+  </script>
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

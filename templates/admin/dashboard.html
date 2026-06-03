@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - EOS Compare{% endblock %}
+{% block page_title %}Administration{% endblock %}
+{% block page_subtitle %}Gestion des utilisateurs et statistiques{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <span class="stat-label">Total utilisateurs</span>
+        <div class="stat-num">{{ stats.total_users }}</div>
+        <div class="stat-note">👥 inscrits</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Vérifiés</span>
+        <div class="stat-num" style="color: #22c55e;">{{ stats.verified_users }}</div>
+        <div class="stat-note">✅ email validé</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Non vérifiés</span>
+        <div class="stat-num" style="color: #f59e0b;">{{ stats.unverified_users }}</div>
+        <div class="stat-note">⏳ en attente</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Actifs (7j)</span>
+        <div class="stat-num" style="color: #06b6d4;">{{ stats.active_users }}</div>
+        <div class="stat-note">📊 connectés</div>
+    </div>
+</div>
+
+<div class="stats-grid" style="margin-bottom: 24px;">
+    <div class="stat-card">
+        <span class="stat-label">Calculs totaux</span>
+        <div class="stat-num">{{ stats.total_calculations }}</div>
+        <div class="stat-note">🔬 simulations</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Calculs (7j)</span>
+        <div class="stat-num">{{ stats.calculations_7d }}</div>
+        <div class="stat-note">📈 cette semaine</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Gaz personnalisés</span>
+        <div class="stat-num">{{ stats.total_custom_gases }}</div>
+        <div class="stat-note">🧪 créés</div>
+    </div>
+    <div class="stat-card">
+        <span class="stat-label">Admins / Teachers</span>
+        <div class="stat-num">{{ stats.admins }} / {{ stats.teachers }}</div>
+        <div class="stat-note">👨‍🏫 👨‍💻</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-head">
+        <h2>Évolution des inscriptions</h2>
+        <span class="tag">7 derniers jours</span>
+    </div>
+    <div class="chart-container" style="height: 300px;">
+        <canvas id="registrationChart"></canvas>
+    </div>
+</div>
+
+<div class="btn-actions" style="margin-top: 16px;">
+    <a href="{{ url_for('admin.users') }}" class="btn btn-primary">📋 Gérer les utilisateurs</a>
+</div>
+
+<script>
+// Graphique des inscriptions
+const ctx = document.getElementById('registrationChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ registration_data|map(attribute='date')|list|tojson }},
+        datasets: [{
+            label: 'Nouveaux utilisateurs',
+            data: {{ registration_data|map(attribute='count')|list|tojson }},
+            borderColor: '#06b6d4',
+            backgroundColor: 'rgba(6, 182, 212, 0.1)',
+            fill: true,
+            tension: 0.3
+        }]
+    }
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { labels: { color: '#cbd5e1' } }
+        },
+        scales: {
+            y: { 
+                ticks: { stepSize: 1, color: '#94a3b8' },
+                grid: { color: 'rgba(148, 163, 184, 0.1)' }
+            },
+            x: { ticks: { color: '#94a3b8' } }
+        }
+    }
+});
+</script>
+{% endblock %}

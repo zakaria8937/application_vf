@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — EOS Compare{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+{% block page_subtitle %}Calcul propre. Lecture rapide.{% endblock %}
+
+{% block content %}
+<section class="hero-panel">
+  <div class="hero-copy">
+    <span class="hero-badge">EOS Compare</span>
+    <h2>Compare. Visualise. Décide.</h2>
+    <p>Ton espace de calcul est maintenant plus net, plus moderne et plus rapide à lire.</p>
+    <div class="hero-actions">
+      <a href="{{ url_for('main.eos_explorer') }}" class="btn btn-primary">Ouvrir Explorateur EOS</a>
+      <a href="{{ url_for('main.isotherms') }}" class="btn btn-secondary">Voir les graphes</a>
+    </div>
+  </div>
+
+  <div class="hero-mini-grid">
+      <div class="mini-stat">
+          <span>Équations</span>
+          <strong>{{ eos_count }}</strong>
+      </div>
+      <div class="mini-stat">
+          <span>Gaz prédéfinis</span>
+          <strong>{{ predefined_gas_count }}</strong>
+      </div>
+      <div class="mini-stat">
+          <span>Mes gaz</span>
+          <strong>{{ custom_gases_count }}</strong>
+      </div>
+      <div class="mini-stat">
+          <span>Calculs</span>
+          <strong>{{ total_calcs }}</strong>
+      </div>
+  </div>
+</section>
+
+<div class="quick-grid">
+  <a href="{{ url_for('main.eos_explorer') }}" class="quick-card">
+    <span class="quick-pill">Vm + Z</span>
+    <h3>Explorateur EOS</h3>
+    <p>Comparer les modèles.</p>
+  </a>
+  <a href="{{ url_for('main.isotherms') }}" class="quick-card">
+    <span class="quick-pill">P-V</span>
+    <h3>Isothermes</h3>
+    <p>Lire les courbes facilement.</p>
+  </a>
+  <a href="{{ url_for('main.z_factor') }}" class="quick-card">
+    <span class="quick-pill">Z(P)</span>
+    <h3>Facteur Z</h3>
+    <p>Voir l'écart au gaz parfait.</p>
+  </a>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Mode préféré</span>
+    <div class="stat-num">PR</div>
+    <div class="stat-note">Peng-Robinson pour une lecture robuste.</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Vue rapide</span>
+    <div class="stat-num">Vm</div>
+    <div class="stat-note">Volume molaire en un coup d'œil.</div>
+  </div>
+  <div class="stat-card">
+    <span class="stat-label">Vue simple</span>
+    <div class="stat-num">Z</div>
+    <div class="stat-note">Interaction idéale vs réelle.</div>
+  </div>
+</div>
+
+<!-- ═══════════════ Section Formules EOS ═══════════════ -->
+<h2 class="section-title">Équations d'État</h2>
+<p class="section-subtitle">Les quatre modèles thermodynamiques implémentés dans EOS Compare</p>
+
+<div class="eos-formulas-grid">
+
+  <!-- ── Van der Waals ── -->
+  <div class="formula-card">
+    <div class="formula-header">
+      <div>
+        <h3 class="formula-name">Van der Waals</h3>
+        <span class="formula-year">1873</span>
+      </div>
+      <span class="formula-badge badge-vdw">Classique</span>
+    </div>
+    <div class="formula-main">
+      $$P = \frac{RT}{V_m - b} - \frac{a}{V_m^2}$$
+    </div>
+    <div class="formula-label">Paramètres</div>
+    <div class="formula-params-grid">
+      <div class="formula-param">
+        $$a = \frac{27\,R^2\,T_c^2}{64\,P_c}$$
+      </div>
+      <div class="formula-param">
+        $$b = \frac{R\,T_c}{8\,P_c}$$
+      </div>
+    </div>
+    <div class="formula-note">
+      Où $T_c$ est la température critique, $P_c$ la pression critique, et $R$ la constante des gaz parfaits.
+    </div>
+  </div>
+
+  <!-- ── Redlich-Kwong ── -->
+  <div class="formula-card">
+    <div class="formula-header">
+      <div>
+        <h3 class="formula-name">Redlich-Kwong</h3>
+        <span class="formula-year">1949</span>
+      </div>
+      <span class="formula-badge badge-srk">Améliorée</span>
+    </div>
+    <div class="formula-main">
+      $$P = \frac{RT}{V_m - b} - \frac{a}{T^{0.5}\,V_m(V_m + b)}$$
+    </div>
+    <div class="formula-label">Paramètres</div>
+    <div class="formula-params-grid">
+      <div class="formula-param">
+        $$a = 0.42748\;\frac{R^2\,T_c^{2.5}}{P_c}$$
+      </div>
+      <div class="formula-param">
+        $$b = 0.08664\;\frac{R\,T_c}{P_c}$$
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SRK ── -->
+  <div class="formula-card">
+    <div class="formula-header">
+      <div>
+        <h3 class="formula-name">Soave-Redlich-Kwong</h3>
+        <span class="formula-year">1972</span>
+      </div>
+      <span class="formula-badge badge-srk">Populaire</span>
+    </div>
+    <div class="formula-main">
+      $$P = \frac{RT}{V_m - b} - \frac{a(T)}{V_m(V_m + b)}$$
+    </div>
+    <div class="formula-label">Paramètres</div>
+    <div class="formula-params-grid">
+      <div class="formula-param">
+        $$a_c = 0.42748\;\frac{R^2\,T_c^2}{P_c}$$
+      </div>
+      <div class="formula-param">
+        $$b = 0.08664\;\frac{R\,T_c}{P_c}$$
+      </div>
+      <div class="formula-param">
+        $$a(T) = a_c\,\alpha(T_r,\,\omega)$$
+      </div>
+      <div class="formula-param">
+        $$\alpha = \left[1 + m\left(1 - T_r^{0.5}\right)\right]^2$$
+      </div>
+    </div>
+    <div class="formula-note">
+      Avec : $m = 0.480 + 1.574\,\omega - 0.176\,\omega^2$
+    </div>
+  </div>
+
+  <!-- ── Peng-Robinson ── -->
+  <div class="formula-card">
+    <div class="formula-header">
+      <div>
+        <h3 class="formula-name">Peng-Robinson</h3>
+        <span class="formula-year">1976</span>
+      </div>
+      <span class="formula-badge badge-pr">Référence</span>
+    </div>
+    <div class="formula-main">
+      $$P = \frac{RT}{V_m - b} - \frac{a(T)}{V_m^2 + 2bV_m - b^2}$$
+    </div>
+    <div class="formula-label">Paramètres</div>
+    <div class="formula-params-grid">
+      <div class="formula-param">
+        $$a_c = 0.45724\;\frac{R^2\,T_c^2}{P_c}$$
+      </div>
+      <div class="formula-param">
+        $$b = 0.07780\;\frac{R\,T_c}{P_c}$$
+      </div>
+      <div class="formula-param">
+        $$a(T) = a_c\,\alpha(T_r,\,\omega)$$
+      </div>
+      <div class="formula-param">
+        $$\alpha = \left[1 + \kappa\left(1 - T_r^{0.5}\right)\right]^2$$
+      </div>
+    </div>
+    <div class="formula-note">
+      Avec : $\kappa = 0.37464 + 1.54226\,\omega - 0.26992\,\omega^2$
+    </div>
+  </div>
+
+</div>
+
+<div class="card">
+  <div class="card-head">
+    <h2>Derniers calculs</h2>
+    <span class="tag">{{ recent|length }} récents</span>
+  </div>
+
+  {% if recent %}
+  <div class="table-wrap">
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Gaz</th>
+          <th>T (K)</th>
+          <th>P (bar)</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in recent %}
+        <tr>
+          <td>#{{ c.id }}</td>
+          <td>{{ c.gas_name }}</td>
+          <td>{{ c.temperature }}</td>
+          <td>{{ '%.1f'|format(c.pressure / 1e5) }}</td>
+          <td>{{ c.created_at.strftime('%d/%m %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <h3>Rien ici pour le moment.</h3>
+    <p>Fais un premier calcul et il apparaîtra ici.</p>
+    <a href="{{ url_for('main.eos_explorer') }}" class="btn btn-primary">Commencer</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Auto-scale KaTeX formulas to fit their container — no scrollbars, no clipping
+function fitKatex() {
+  document.querySelectorAll('.formula-main, .formula-param').forEach(function(box) {
+    var inner = box.querySelector('.katex-display') || box.querySelector('.katex');
+    if (!inner) return;
+    inner.style.transform = '';
+    inner.style.transformOrigin = 'center center';
+    var boxW = box.clientWidth - 24;
+    var innerW = inner.scrollWidth;
+    if (innerW > boxW && boxW > 0) {
+      var scale = boxW / innerW;
+      inner.style.transform = 'scale(' + scale + ')';
+    }
+  });
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() { setTimeout(fitKatex, 150); });
+} else {
+  setTimeout(fitKatex, 150);
+}
+window.addEventListener('resize', fitKatex);
+</script>
+
+<!-- Footer avec lien À propos -->
+<div class="about-footer" style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line);">
+    <a href="{{ url_for('main.apropos') }}" class="about-footer-link" style="display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        À propos d'EOS Compare
+    </a>
+</div>
+{% endblock %}

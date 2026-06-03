@@ -1,0 +1,1000 @@
+{% extends "base.html" %}
+{% block title %}Équilibre Liquide-Vapeur — EOS Compare{% endblock %}
+{% block page_title %}Équilibre Liquide-Vapeur{% endblock %}
+{% block page_subtitle %}Calculs d'équilibre pour mélanges idéaux et non idéaux{% endblock %}
+
+{% block content %}
+<style>
+  .vle-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .vle-step {
+    background: rgba(13, 23, 40, 0.75);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    backdrop-filter: blur(18px);
+    box-shadow: 0 8px 32px rgba(3, 10, 24, 0.35);
+  }
+
+  [data-theme="light"] .vle-step {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(15, 23, 42, 0.09);
+    box-shadow: 0 8px 28px rgba(15, 23, 42, 0.1);
+  }
+
+  .step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-2), var(--primary));
+    color: white;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-right: 12px;
+  }
+
+  .step-title {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: 6px;
+  }
+
+  .form-group input,
+  .form-group select {
+    padding: 10px 14px;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    background: rgba(13, 23, 40, 0.5);
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus {
+    outline: none;
+    border-color: var(--primary-2);
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+  }
+
+  [data-theme="light"] .form-group input,
+  [data-theme="light"] .form-group select {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(15, 23, 42, 0.15);
+  }
+
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary-2), var(--primary));
+    color: white;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+  }
+
+  .btn-secondary {
+    background: rgba(148, 163, 184, 0.1);
+    color: var(--text);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+
+  .btn-secondary:hover {
+    background: rgba(148, 163, 184, 0.2);
+  }
+
+  .model-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 16px;
+  }
+
+  .model-card {
+    padding: 20px;
+    border: 2px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(13, 23, 40, 0.3);
+  }
+
+  .model-card:hover {
+    border-color: var(--primary-2);
+    background: rgba(6, 182, 212, 0.05);
+    transform: translateY(-2px);
+  }
+
+  .model-card.selected {
+    border-color: var(--primary-2);
+    background: rgba(6, 182, 212, 0.1);
+  }
+
+  .model-card h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .model-card p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .model-card small {
+    font-size: 0.7rem;
+    color: var(--primary-2);
+    font-family: monospace;
+  }
+
+  .params-group {
+    background: rgba(13, 23, 40, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+
+  .params-group h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--primary-2);
+  }
+
+  .params-group small {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+  }
+
+  .result-card {
+    background: rgba(13, 23, 40, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  [data-theme="light"] .result-card {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .result-card h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--primary-2);
+    margin-bottom: 12px;
+  }
+
+  .result-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .result-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .equations-box {
+    background: rgba(6, 182, 212, 0.05);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+  }
+
+  .equations-box h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-2);
+    margin-bottom: 12px;
+  }
+
+  .equations-box ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .equations-box li {
+    font-size: 0.9rem;
+    color: var(--text-soft);
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(6, 182, 212, 0.1);
+  }
+
+  .equations-box li:last-child {
+    border-bottom: none;
+  }
+
+  .chart-card {
+    background: rgba(13, 23, 40, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.1);
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 20px;
+  }
+
+  [data-theme="light"] .chart-card {
+    background: rgba(255, 255, 255, 0.7);
+  }
+
+  .chart-card h4 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 350px;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+  }
+
+  .error {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #fca5a5;
+    margin-bottom: 16px;
+  }
+
+  .component-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 2fr 1fr;
+    gap: 12px;
+    align-items: end;
+    margin-bottom: 12px;
+  }
+
+  @media (max-width: 768px) {
+    .component-row {
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    .model-cards {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<div class="vle-container">
+  
+  <!-- Step 1: Basic Parameters -->
+  <div class="vle-step" id="step1">
+    <div class="step-title">
+      <span class="step-number">1</span>
+      Paramètres du mélange
+    </div>
+    
+    <div class="form-grid">
+      <div class="form-group">
+        <label>🌡️ Température (K)</label>
+        <input type="number" id="temperature" value="298.15" step="0.1" min="200" max="500">
+      </div>
+      <div class="form-group">
+        <label>📊 Pression (bar)</label>
+        <input type="number" id="pressure" value="1.0" step="0.1" min="0.1" max="100">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>🧪 Composants du mélange</label>
+      <div id="components-container">
+        <div class="component-row">
+          <div class="form-group">
+            <label>Composant 1</label>
+            <select class="component-select" id="comp1">
+              {% for comp in components %}
+              <option value="{{ comp.name }}" 
+                      data-tc="{{ comp.Tc }}" 
+                      data-pc="{{ comp.Pc }}" 
+                      data-omega="{{ comp.omega }}"
+                      data-formula="{{ comp.formula }}"
+                      {% if loop.first %}selected{% endif %}>
+                {{ comp.name }} ({{ comp.formula }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fraction molaire x₁</label>
+            <input type="number" class="mole-fraction" id="x1" value="0.5" step="0.01" min="0" max="1">
+          </div>
+          <div class="form-group">
+            <label>Composant 2</label>
+            <select class="component-select" id="comp2">
+              {% for comp in components %}
+              <option value="{{ comp.name }}" 
+                      data-tc="{{ comp.Tc }}" 
+                      data-pc="{{ comp.Pc }}" 
+                      data-omega="{{ comp.omega }}"
+                      data-formula="{{ comp.formula }}"
+                      {% if loop.index == 2 %}selected{% endif %}>
+                {{ comp.name }} ({{ comp.formula }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fraction molaire x₂</label>
+            <input type="number" class="mole-fraction" id="x2" value="0.5" step="0.01" min="0" max="1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <button class="btn btn-primary" onclick="nextStep()">
+        Suivant →
+      </button>
+    </div>
+  </div>
+
+  <!-- Step 2: Type de mélange -->
+  <div class="vle-step hidden" id="step2">
+    <div class="step-title">
+      <span class="step-number">2</span>
+      Type de mélange
+    </div>
+
+    <div class="model-cards">
+      <div class="model-card" onclick="selectMixtureType('eos')" id="eos-card">
+        <h4>⚡ Équations d'état avec règles de mélange</h4>
+        <p>Van der Waals, Peng-Robinson, SRK</p>
+        <small>Pour mélanges gazeux à haute pression</small>
+      </div>
+      <div class="model-card" onclick="selectMixtureType('non-ideal')" id="non-ideal-card">
+        <h4>🔬 Modèles d'énergie de Gibbs excédentaire</h4>
+        <p>NRTL, UNIQUAC, UNIFAC, Wilson</p>
+        <small>Pour mélanges liquides non idéaux</small>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px;">
+      <button class="btn btn-secondary" onclick="prevStep()">← Précédent</button>
+    </div>
+  </div>
+
+  <!-- Step 2b: EOS Selection (pour EOS) -->
+  <div class="vle-step hidden" id="step2b">
+    <div class="step-title">
+      <span class="step-number">2b</span>
+      Sélection de l'équation d'état
+    </div>
+
+    <div class="model-cards">
+      <div class="model-card" onclick="selectEOS('vdw')" id="vdw-card">
+        <h4>🍃 Van der Waals (1873)</h4>
+        <p>Première EOS cubique, qualitativement correcte</p>
+        <small>(P + a/Vm²)(Vm - b) = RT</small>
+      </div>
+      <div class="model-card" onclick="selectEOS('srk')" id="srk-card">
+        <h4>⚡ Soave-Redlich-Kwong (1972)</h4>
+        <p>Amélioration de RK, bonne pour les hydrocarbures</p>
+        <small>P = RT/(Vm-b) - a(T)/[Vm(Vm+b)]</small>
+      </div>
+      <div class="model-card" onclick="selectEOS('pr')" id="pr-card">
+        <h4>🎯 Peng-Robinson (1976)</h4>
+        <p>La plus précise, recommandée pour la plupart des gaz</p>
+        <small>P = RT/(Vm-b) - a(T)/[Vm(Vm+b)+b(Vm-b)]</small>
+      </div>
+    </div>
+
+    <!-- Paramètres EOS -->
+    <div id="eos-params-container" class="hidden" style="margin-top: 24px;">
+      
+      <div class="form-grid">
+        <div class="form-group">
+          <label>🔧 Paramètre d'interaction binaire k₁₂</label>
+          <input type="number" id="k12-param" value="0" step="0.01" min="-1" max="1">
+          <small>k₁₂ = 0 pour mélange idéal</small>
+        </div>
+      </div>
+
+      <!-- Paramètres Van der Waals -->
+      <div id="vdw-params" class="params-group hidden">
+        <h4>📊 Paramètres Van der Waals</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>a₁ (Pa·m⁶/mol²)</label>
+            <input type="number" id="vdw-a1" step="0.001" value="0.2283" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>b₁ (m³/mol)</label>
+            <input type="number" id="vdw-b1" step="1e-6" value="4.301e-5" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>a₂ (Pa·m⁶/mol²)</label>
+            <input type="number" id="vdw-a2" step="0.001" value="0.3658" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>b₂ (m³/mol)</label>
+            <input type="number" id="vdw-b2" step="1e-6" value="4.286e-5" readonly style="opacity:0.7;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres Peng-Robinson -->
+      <div id="pr-params" class="params-group hidden">
+        <h4>📊 Paramètres Peng-Robinson</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Composant 1</label>
+            <input type="text" id="pr-name1" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>Tc₁ (K)</label>
+            <input type="number" id="pr-tc1" step="0.1" value="190.6">
+          </div>
+          <div class="form-group">
+            <label>Pc₁ (bar)</label>
+            <input type="number" id="pr-pc1" step="0.1" value="46.0">
+          </div>
+          <div class="form-group">
+            <label>ω₁</label>
+            <input type="number" id="pr-omega1" step="0.001" value="0.011">
+          </div>
+          <div class="form-group">
+            <label>Composant 2</label>
+            <input type="text" id="pr-name2" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>Tc₂ (K)</label>
+            <input type="number" id="pr-tc2" step="0.1" value="425.1">
+          </div>
+          <div class="form-group">
+            <label>Pc₂ (bar)</label>
+            <input type="number" id="pr-pc2" step="0.1" value="38.0">
+          </div>
+          <div class="form-group">
+            <label>ω₂</label>
+            <input type="number" id="pr-omega2" step="0.001" value="0.200">
+          </div>
+        </div>
+      </div>
+
+      <!-- Paramètres SRK -->
+      <div id="srk-params" class="params-group hidden">
+        <h4>📊 Paramètres Soave-Redlich-Kwong</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Composant 1</label>
+            <input type="text" id="srk-name1" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>Tc₁ (K)</label>
+            <input type="number" id="srk-tc1" step="0.1" value="190.6">
+          </div>
+          <div class="form-group">
+            <label>Pc₁ (bar)</label>
+            <input type="number" id="srk-pc1" step="0.1" value="46.0">
+          </div>
+          <div class="form-group">
+            <label>ω₁</label>
+            <input type="number" id="srk-omega1" step="0.001" value="0.011">
+          </div>
+          <div class="form-group">
+            <label>Composant 2</label>
+            <input type="text" id="srk-name2" readonly style="opacity:0.7;">
+          </div>
+          <div class="form-group">
+            <label>Tc₂ (K)</label>
+            <input type="number" id="srk-tc2" step="0.1" value="425.1">
+          </div>
+          <div class="form-group">
+            <label>Pc₂ (bar)</label>
+            <input type="number" id="srk-pc2" step="0.1" value="38.0">
+          </div>
+          <div class="form-group">
+            <label>ω₂</label>
+            <input type="number" id="srk-omega2" step="0.001" value="0.200">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: space-between;">
+      <button class="btn btn-secondary" onclick="prevStep()">← Précédent</button>
+      <button class="btn btn-primary" onclick="calculateVLE()">🧮 Calculer</button>
+    </div>
+  </div>
+
+  <!-- Step 3: Model Selection (pour non-ideal) -->
+  <div class="vle-step hidden" id="step3">
+    <div class="step-title">
+      <span class="step-number">3</span>
+      Sélection du modèle thermodynamique
+    </div>
+    
+    <div class="model-cards">
+      <div class="model-card" onclick="selectModel('NRTL')" id="nrtl-card">
+        <h4>📐 NRTL</h4>
+        <p>Pour mélanges fortement non idéaux et azeotropes</p>
+        <small>Paramètres: a₁₂, a₂₁, α</small>
+      </div>
+      <div class="model-card" onclick="selectModel('UNIQUAC')" id="uniquac-card">
+        <h4>🧩 UNIQUAC</h4>
+        <p>Bon compromis précision/généralité</p>
+        <small>Paramètres: r, q, a₁₂, a₂₁</small>
+      </div>
+      <div class="model-card" onclick="selectModel('UNIFAC')" id="unifac-card">
+        <h4>🔬 UNIFAC</h4>
+        <p>Méthode contribution de groupes</p>
+        <small>Basé sur les groupes fonctionnels</small>
+      </div>
+      <div class="model-card" onclick="selectModel('Wilson')" id="wilson-card">
+        <h4>📈 Wilson</h4>
+        <p>Pour mélanges liquides miscibles</p>
+        <small>Paramètres: V, λ₁₂, λ₂₁</small>
+      </div>
+    </div>
+
+    <div id="model-params-container" class="hidden" style="margin-top: 20px;">
+      
+      <!-- NRTL Parameters -->
+      <div class="params-group" id="nrtl-params">
+        <h4>Paramètres NRTL</h4>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>α (non-randomness)</label>
+            <input type="number" id="alpha-param" value="0.3" step="0.01" min="0.2" max="0.47">
+          </div>
+          <div class="form-group">
+            <label>a₁₂ (K)</label>
+            <input type="number" id="a12-param" value="-0.8009" step="1">
+          </div>
+          <div class="form-group">
+            <label>a₂₁ (K)</label>
+            <input type="number" id="a21-param" value="1239.5" step="1">
+          </div>
+        </div>
+      </div>
+      
+      <!-- UNIQUAC Parameters -->
+      <div class="params-group hidden" id="uniquac-params">
+        <h4>Paramètres UNIQUAC</h4>
+        <div class="form-grid">
+          <div class="form-group"><label>r₁</label><input type="number" id="uniquac-r1-param" value="2.574" step="0.001"></div>
+          <div class="form-group"><label>q₁</label><input type="number" id="uniquac-q1-param" value="2.336" step="0.001"></div>
+          <div class="form-group"><label>r₂</label><input type="number" id="uniquac-r2-param" value="2.870" step="0.001"></div>
+          <div class="form-group"><label>q₂</label><input type="number" id="uniquac-q2-param" value="2.410" step="0.001"></div>
+          <div class="form-group"><label>a₁₂ (K)</label><input type="number" id="uniquac-a12-param" value="-52.39" step="0.01"></div>
+          <div class="form-group"><label>a₂₁ (K)</label><input type="number" id="uniquac-a21-param" value="340.35" step="0.01"></div>
+        </div>
+      </div>
+      
+      <!-- UNIFAC Parameters -->
+      <div class="params-group hidden" id="unifac-params">
+        <h4>Paramètres UNIFAC</h4>
+        <div class="form-grid">
+          <div class="form-group"><label>Groupes composant 1</label><input type="text" id="unifac-groups1-param" value="CH3:1,CH2:1,OH:1"></div>
+          <div class="form-group"><label>Groupes composant 2</label><input type="text" id="unifac-groups2-param" value="H2O:1"></div>
+        </div>
+      </div>
+      
+      <!-- Wilson Parameters -->
+      <div class="params-group hidden" id="wilson-params">
+        <h4>Paramètres Wilson</h4>
+        <div class="form-grid">
+          <div class="form-group"><label>V₁ (cm³/mol)</label><input type="number" id="wilson-v1-param" value="74.0" step="0.1"></div>
+          <div class="form-group"><label>V₂ (cm³/mol)</label><input type="number" id="wilson-v2-param" value="80.7" step="0.1"></div>
+          <div class="form-group"><label>λ₁₂ (J/mol)</label><input type="number" id="wilson-a12-param" value="-161.88" step="0.01"></div>
+          <div class="form-group"><label>λ₂₁ (J/mol)</label><input type="number" id="wilson-a21-param" value="291.27" step="0.01"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 16px; display: flex; gap: 12px; justify-content: space-between;">
+      <button class="btn btn-secondary" onclick="prevStep()">← Précédent</button>
+      <button class="btn btn-primary" onclick="calculateVLE()">🧮 Calculer</button>
+    </div>
+  </div>
+
+  <!-- Step 4: Results -->
+  <div class="vle-step hidden" id="step4">
+    <div class="step-title">
+      <span class="step-number">4</span>
+      Résultats
+    </div>
+
+    <div id="error-message" class="error hidden"></div>
+    <div id="loading-message" class="loading hidden">⏳ Calcul en cours...</div>
+
+    <div id="results-content" class="hidden">
+      <div class="results-grid">
+        <div class="result-card"><h4>📊 Pression totale</h4><div class="result-value" id="total-pressure">-</div><div class="result-label">bar</div></div>
+        <div class="result-card"><h4>💨 Composition vapeur y₁</h4><div class="result-value" id="vapor-composition">-</div><div class="result-label">fraction molaire</div></div>
+        <div class="result-card"><h4>γ₁</h4><div class="result-value" id="gamma1">-</div><div class="result-label">Coefficient d'activité</div></div>
+        <div class="result-card"><h4>γ₂</h4><div class="result-value" id="gamma2">-</div><div class="result-label">Coefficient d'activité</div></div>
+      </div>
+
+      <div class="equations-box"><h4>📜 Équations utilisées</h4><ul id="equations-list"></ul></div>
+      <div class="equations-box"><h4>💧 Pressions de saturation</h4><div id="saturation-pressures"></div></div>
+      <div class="chart-card" id="gamma-chart-card"><h4>📈 Courbes γi</h4><div class="chart-container"><canvas id="gamma-chart"></canvas></div></div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="resetCalculation()">🔄 Nouveau calcul</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentStep = 1;
+let selectedMixtureType = null;
+let selectedModel = null;
+let selectedEOS = null;
+let gammaChart = null;
+
+// Navigation
+function nextStep() {
+  document.getElementById(`step${currentStep}`).classList.add('hidden');
+  currentStep++;
+  document.getElementById(`step${currentStep}`).classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function prevStep() {
+  document.getElementById(`step${currentStep}`).classList.add('hidden');
+  currentStep--;
+  document.getElementById(`step${currentStep}`).classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Sélection du type de mélange
+function selectMixtureType(type) {
+  selectedMixtureType = type;
+  
+  document.querySelectorAll('#step2 .model-card').forEach(c => c.classList.remove('selected'));
+  
+  if (type === 'ideal') {
+    document.getElementById('ideal-card').classList.add('selected');
+    calculateVLE(); // Calcul direct
+  } else if (type === 'eos') {
+    document.getElementById('eos-card').classList.add('selected');
+    document.getElementById('step2').classList.add('hidden');
+    currentStep = 2;
+    document.getElementById('step2b').classList.remove('hidden');
+    window.scrollTo({ top: 0 });
+  } else if (type === 'non-ideal') {
+    document.getElementById('non-ideal-card').classList.add('selected');
+    nextStep(); // Va à l'étape 3
+  }
+}
+
+// Sélection de l'EOS
+function selectEOS(eos) {
+  selectedEOS = eos;
+  
+  document.querySelectorAll('#step2b .model-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`${eos}-card`).classList.add('selected');
+  
+  // Afficher les paramètres
+  document.getElementById('eos-params-container').classList.remove('hidden');
+  document.querySelectorAll('#step2b .params-group').forEach(g => g.classList.add('hidden'));
+  
+  if (eos === 'vdw') document.getElementById('vdw-params').classList.remove('hidden');
+  else if (eos === 'pr') document.getElementById('pr-params').classList.remove('hidden');
+  else if (eos === 'srk') document.getElementById('srk-params').classList.remove('hidden');
+  
+  updateEOSParamsFromComponents();
+}
+
+// Sélection du modèle d'activité
+function selectModel(model) {
+  selectedModel = model;
+  
+  document.querySelectorAll('#step3 .model-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById(`${model.toLowerCase()}-card`).classList.add('selected');
+  
+  document.getElementById('model-params-container').classList.remove('hidden');
+  document.querySelectorAll('#step3 .params-group').forEach(g => g.classList.add('hidden'));
+  document.getElementById(`${model.toLowerCase()}-params`).classList.remove('hidden');
+}
+
+// Mettre à jour les paramètres EOS
+function updateEOSParamsFromComponents() {
+  const comp1 = document.getElementById('comp1');
+  const comp2 = document.getElementById('comp2');
+  
+  const name1 = comp1.options[comp1.selectedIndex]?.text.split(' (')[0] || 'Composant 1';
+  const name2 = comp2.options[comp2.selectedIndex]?.text.split(' (')[0] || 'Composant 2';
+  
+  const tc1 = parseFloat(comp1.selectedOptions[0]?.dataset.tc || 190.6);
+  const tc2 = parseFloat(comp2.selectedOptions[0]?.dataset.tc || 425.1);
+  const pc1 = parseFloat(comp1.selectedOptions[0]?.dataset.pc || 46.0);
+  const pc2 = parseFloat(comp2.selectedOptions[0]?.dataset.pc || 38.0);
+  const omega1 = parseFloat(comp1.selectedOptions[0]?.dataset.omega || 0.011);
+  const omega2 = parseFloat(comp2.selectedOptions[0]?.dataset.omega || 0.200);
+  
+  // PR
+  document.getElementById('pr-name1').value = name1;
+  document.getElementById('pr-name2').value = name2;
+  document.getElementById('pr-tc1').value = tc1;
+  document.getElementById('pr-tc2').value = tc2;
+  document.getElementById('pr-pc1').value = pc1;
+  document.getElementById('pr-pc2').value = pc2;
+  document.getElementById('pr-omega1').value = omega1;
+  document.getElementById('pr-omega2').value = omega2;
+  
+  // SRK
+  document.getElementById('srk-name1').value = name1;
+  document.getElementById('srk-name2').value = name2;
+  document.getElementById('srk-tc1').value = tc1;
+  document.getElementById('srk-tc2').value = tc2;
+  document.getElementById('srk-pc1').value = pc1;
+  document.getElementById('srk-pc2').value = pc2;
+  document.getElementById('srk-omega1').value = omega1;
+  document.getElementById('srk-omega2').value = omega2;
+}
+
+// Synchronisation des fractions molaires
+document.addEventListener('DOMContentLoaded', function() {
+  const x1 = document.getElementById('x1');
+  const x2 = document.getElementById('x2');
+  x1.addEventListener('input', () => x2.value = (1 - parseFloat(x1.value)).toFixed(4));
+  x2.addEventListener('input', () => x1.value = (1 - parseFloat(x2.value)).toFixed(4));
+  updateEOSParamsFromComponents();
+});
+
+// Calcul VLE
+async function calculateVLE() {
+  const temperature = parseFloat(document.getElementById('temperature').value);
+  const pressure = parseFloat(document.getElementById('pressure').value);
+  const x1 = parseFloat(document.getElementById('x1').value);
+  const comp1 = document.getElementById('comp1').value;
+  const comp2 = document.getElementById('comp2').value;
+  
+  let data = {
+    components: [comp1, comp2],
+    temperature: temperature,
+    pressure: pressure,
+    mole_fractions: [x1, 1 - x1],
+    model_type: selectedMixtureType === 'ideal' ? 'ideal' : (selectedMixtureType === 'eos' ? 'eos' : 'activity'),
+    model: selectedMixtureType === 'eos' ? selectedEOS : selectedModel,
+    model_params: {}
+  };
+  
+  // Ajouter les paramètres
+  if (selectedMixtureType === 'eos' && selectedEOS === 'pr') {
+    data.model_params = {
+      k12: parseFloat(document.getElementById('k12-param').value),
+      tc1: parseFloat(document.getElementById('pr-tc1').value),
+      tc2: parseFloat(document.getElementById('pr-tc2').value),
+      pc1: parseFloat(document.getElementById('pr-pc1').value),
+      pc2: parseFloat(document.getElementById('pr-pc2').value),
+      w1: parseFloat(document.getElementById('pr-omega1').value),
+      w2: parseFloat(document.getElementById('pr-omega2').value)
+    };
+  } else if (selectedMixtureType === 'eos' && selectedEOS === 'srk') {
+    data.model_params = {
+      k12: parseFloat(document.getElementById('k12-param').value),
+      tc1: parseFloat(document.getElementById('srk-tc1').value),
+      tc2: parseFloat(document.getElementById('srk-tc2').value),
+      pc1: parseFloat(document.getElementById('srk-pc1').value),
+      pc2: parseFloat(document.getElementById('srk-pc2').value),
+      w1: parseFloat(document.getElementById('srk-omega1').value),
+      w2: parseFloat(document.getElementById('srk-omega2').value)
+    };
+  } else if (selectedModel === 'NRTL') {
+    data.model_params = {
+      alpha: parseFloat(document.getElementById('alpha-param').value),
+      a12: parseFloat(document.getElementById('a12-param').value),
+      a21: parseFloat(document.getElementById('a21-param').value)
+    };
+  } else if (selectedModel === 'UNIQUAC') {
+    data.model_params = {
+      r1: parseFloat(document.getElementById('uniquac-r1-param').value),
+      r2: parseFloat(document.getElementById('uniquac-r2-param').value),
+      q1: parseFloat(document.getElementById('uniquac-q1-param').value),
+      q2: parseFloat(document.getElementById('uniquac-q2-param').value),
+      a12: parseFloat(document.getElementById('uniquac-a12-param').value),
+      a21: parseFloat(document.getElementById('uniquac-a21-param').value)
+    };
+  } else if (selectedModel === 'UNIFAC') {
+    data.model_params = {
+      component_groups: [
+        parseUNIFACGroups(document.getElementById('unifac-groups1-param').value),
+        parseUNIFACGroups(document.getElementById('unifac-groups2-param').value)
+      ]
+    };
+  } else if (selectedModel === 'Wilson') {
+    data.model_params = {
+      V1: parseFloat(document.getElementById('wilson-v1-param').value),
+      V2: parseFloat(document.getElementById('wilson-v2-param').value),
+      lambda12: parseFloat(document.getElementById('wilson-a12-param').value),
+      lambda21: parseFloat(document.getElementById('wilson-a21-param').value)
+    };
+  }
+  
+  document.getElementById('step3').classList.add('hidden');
+  document.getElementById('step2b').classList.add('hidden');
+  document.getElementById('step4').classList.remove('hidden');
+  document.getElementById('loading-message').classList.remove('hidden');
+  document.getElementById('results-content').classList.add('hidden');
+  
+  try {
+    const response = await fetch('/vle/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    
+    if (result.success) {
+      displayResults(result.result);
+      if (selectedMixtureType !== 'ideal') generateGammaCurve(data);
+    } else {
+      document.getElementById('error-message').textContent = result.error;
+      document.getElementById('error-message').classList.remove('hidden');
+    }
+  } catch (error) {
+    document.getElementById('error-message').textContent = 'Erreur: ' + error.message;
+    document.getElementById('error-message').classList.remove('hidden');
+  }
+  document.getElementById('loading-message').classList.add('hidden');
+}
+
+function parseUNIFACGroups(value) {
+  const groups = {};
+  value.split(',').forEach(item => {
+    const [group, count] = item.split(':');
+    if (group && count) groups[group.trim()] = parseInt(count);
+  });
+  return groups;
+}
+
+function displayResults(result) {
+  document.getElementById('results-content').classList.remove('hidden');
+  document.getElementById('total-pressure').textContent = result.bubble_pressure?.toFixed(4) || '-';
+  document.getElementById('vapor-composition').textContent = result.vapor_composition?.[0]?.toFixed(4) || '-';
+  document.getElementById('gamma1').textContent = result.activity_coefficients?.[0]?.toFixed(4) || '-';
+  document.getElementById('gamma2').textContent = result.activity_coefficients?.[1]?.toFixed(4) || '-';
+  
+  const eqList = document.getElementById('equations-list');
+  eqList.innerHTML = '';
+  (result.equations_used || []).forEach(eq => { const li = document.createElement('li'); li.textContent = eq; eqList.appendChild(li); });
+  
+  if (result.saturation_pressures) {
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">';
+    result.saturation_pressures.forEach((psat, i) => {
+      html += `<div style="background:rgba(6,182,212,0.1);padding:12px;border-radius:8px;"><div style="font-size:0.85rem;">Psat${i+1}(T)</div><div style="font-size:1.2rem;font-weight:700;">${psat.toFixed(4)} bar</div></div>`;
+    });
+    html += '</div>';
+    document.getElementById('saturation-pressures').innerHTML = html;
+  }
+}
+
+async function generateGammaCurve(data) {
+  try {
+    const response = await fetch('/vle/gamma', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    if (result.success && result.result) createGammaChart(result.result);
+  } catch (error) { console.error('Gamma error:', error); }
+}
+
+function createGammaChart(data) {
+  const ctx = document.getElementById('gamma-chart').getContext('2d');
+  if (gammaChart) gammaChart.destroy();
+  
+  const isLight = document.documentElement.dataset.theme === 'light';
+  gammaChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.x1.map(x => x.toFixed(2)),
+      datasets: [
+        { label: 'γ₁', data: data.gamma1, borderColor: '#06b6d4', fill: false, tension: 0.3, pointRadius: 0 },
+        { label: 'γ₂', data: data.gamma2, borderColor: '#7c3aed', fill: false, tension: 0.3, pointRadius: 0 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: isLight ? '#1f2937' : '#f8fbff' } } },
+      scales: {
+        x: { title: { display: true, text: 'Fraction molaire x₁', color: isLight ? '#1f2937' : '#f8fbff' } },
+        y: { title: { display: true, text: 'Coefficient d\'activité γ', color: isLight ? '#1f2937' : '#f8fbff' }, min: 0 }
+      }
+    }
+  });
+}
+
+function resetCalculation() {
+  currentStep = 1;
+  selectedMixtureType = null;
+  selectedModel = null;
+  selectedEOS = null;
+  document.getElementById('step4').classList.add('hidden');
+  document.getElementById('step3').classList.add('hidden');
+  document.getElementById('step2b').classList.add('hidden');
+  document.getElementById('step1').classList.remove('hidden');
+  document.getElementById('results-content').classList.add('hidden');
+  document.getElementById('error-message').classList.add('hidden');
+  document.getElementById('model-params-container').classList.add('hidden');
+  document.getElementById('eos-params-container').classList.add('hidden');
+  document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
+  if (gammaChart) { gammaChart.destroy(); gammaChart = null; }
+}
+</script>
+{% endblock %}

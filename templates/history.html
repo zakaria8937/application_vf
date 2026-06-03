@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+{% block title %}Historique — EOS Compare{% endblock %}
+{% block page_title %}Historique{% endblock %}
+{% block page_subtitle %}Tes calculs sauvegardés{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-head">
+        <h2>Mes calculs</h2>
+        <div class="filter-bar" style="display: flex; gap: 8px;">
+            <select id="typeFilter" onchange="filterHistory()">
+                <option value="">Tous les types</option>
+                <option value="eos_explorer">🔬 EOS Explorer</option>
+                <option value="z_factor">📊 Facteur Z</option>
+                <option value="vle">💧 VLE</option>
+                <option value="isotherm">📈 Isothermes</option>
+            </select>
+        </div>
+    </div>
+
+    {% if calcs %}
+    <div class="table-wrap">
+        <table class="results-table" id="historyTable">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Gaz</th>
+                    <th>T (K)</th>
+                    <th>P (bar)</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in calcs %}
+                {% set calc_type = c.calculation_type if c.calculation_type else 'eos_explorer' %}
+                <tr data-id="{{ c.id }}" data-type="{{ calc_type }}">
+                    <td>#{{ c.id }}</td>
+                    <td>{{ c.gas_name }}</td>
+                    <td>{{ c.temperature }}</td>
+                    <td>{{ '%.2f'|format(c.pressure / 1e5) }}</td>
+                    <td class="type-badge">
+                        {% if calc_type == 'vle' %}
+                        <span class="badge badge-vle">💧 VLE</span>
+                        {% elif calc_type == 'isotherm' %}
+                        <span class="badge badge-isotherm">📈 Isotherme</span>
+                        {% elif calc_type == 'z_factor' %}
+                        <span class="badge badge-zfactor">📊 Facteur Z</span>
+                        {% else %}
+                        <span class="badge badge-eos">🔬 EOS Explorer</span>
+                        {% endif %}
+                    </td>
+                    <td class="date-cell">{{ c.created_at.strftime('%d/%m/%Y %H:%M') if c.created_at else '-' }}</td>
+                    <td class="action-buttons">
+                        <button class="btn-recalc" data-id="{{ c.id }}" 
+                                data-gas="{{ c.gas_name }}"
+                                data-t="{{ c.temperature }}"
+                                data-p="{{ '%.2f'|format(c.pressure / 1e5) }}"
+                                data-type="{{ calc_type }}">
+                            🔄 Recalculer
+                        </button>
+                        <button class="btn-open" data-id="{{ c.id }}" data-type="{{ calc_type }}">
+                            📂 Ouvrir
+                        </button>
+                        <button class="btn-duplicate" data-id="{{ c.id }}">
+                            📋 Dupliquer
+                        </button>
+                        <button class="btn-export" data-id="{{ c.id }}">
+                            💾 Exporter PDF
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>Aucun calcul enregistré.</h3>
+        <p>Lance un test depuis Explorateur EOS, Isothermes, Facteur Z ou VLE.</p>
+        <div style="display: flex; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+            <a href="{{ url_for('main.eos_explorer') }}" class="btn btn-primary">🔬 Explorateur EOS</a>
+            <a href="{{ url_for('main.isotherms') }}" class="btn btn-secondary">📈 Isothermes</a>
+            <a href="{{ url_for('main.z_factor') }}" class="btn btn-secondary">📊 Facteur Z</a>
+            <a href="{{ url_for('vle.vle_index') }}" class="btn btn-secondary">💧 VLE</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal pour afficher les résultats -->
+<div id="resultModal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modalTitle">📊 Résultats du calcul</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeModal()">Fermer</button>
+            <button class="btn btn-primary" id="modalExportBtn">📄 Exporter PDF</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.action-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+.btn-recalc, .btn-open, .btn-duplicate, .btn-export { padding: 5px 10px; border-radius: 6px; border: none; cursor: pointer; font-size: 0.7rem; font-weight: 600; transition: all 0.2s ease; }
+.btn-recalc { background: rgba(6, 182, 212, 0.15); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3); }
+.btn-recalc:hover { background: rgba(6, 182, 212, 0.3); transform: translateY(-1px); }
+.btn-open { background: rgba(124, 58, 237, 0.15); color: #c4b5fd; border: 1px solid rgba(124, 58, 237, 0.3); }
+.btn-open:hover { background: rgba(124, 58, 237, 0.3); transform: translateY(-1px); }
+.btn-duplicate { background: rgba(34, 197, 94, 0.15); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.3); }
+.btn-duplicate:hover { background: rgba(34, 197, 94, 0.3); transform: translateY(-1px); }
+.btn-export { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+.btn-export:hover { background: rgba(245, 158, 11, 0.3); transform: translateY(-1px); }
+.badge-eos { background: rgba(6, 182, 212, 0.15); color: #67e8f9; }
+.badge-zfactor { background: rgba(124, 58, 237, 0.15); color: #c4b5fd; }
+.badge-vle { background: rgba(34, 197, 94, 0.15); color: #86efac; }
+.badge-isotherm { background: rgba(245, 158, 11, 0.15); color: #fcd34d; }
+.date-cell { white-space: nowrap; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px); z-index: 1000; display: flex; justify-content: center; align-items: center; }
+.modal-container { max-width: 800px; width: 90%; max-height: 85vh; background: var(--panel-strong); border-radius: 20px; border: 1px solid var(--line); overflow: hidden; animation: modalSlideIn 0.3s ease; }
+@keyframes modalSlideIn { from { opacity: 0; transform: translateY(-30px); } to { opacity: 1; transform: translateY(0); } }
+.modal-header { padding: 18px 24px; background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(124, 58, 237, 0.1)); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.modal-header h3 { margin: 0; font-family: 'Outfit', sans-serif; font-size: 1.2rem; }
+.modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); transition: color 0.2s; }
+.modal-close:hover { color: var(--danger); }
+.modal-body { padding: 24px; overflow-y: auto; max-height: 60vh; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 12px; }
+.result-card-modal { background: rgba(13, 23, 40, 0.5); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.result-card-modal h4 { margin: 0 0 12px 0; color: var(--primary-2); font-family: 'Outfit', sans-serif; }
+.result-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 12px; }
+.result-item { background: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 12px; text-align: center; }
+.result-item .label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.result-item .value { font-size: 1.3rem; font-weight: 700; margin-top: 5px; }
+.result-item .unit { font-size: 0.7rem; color: var(--text-muted); }
+.filter-bar select { padding: 6px 12px; border-radius: 8px; background: var(--bg-soft); color: var(--text); border: 1px solid var(--line); cursor: pointer; }
+.type-badge { text-align: center; }
+.type-badge .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; }
+</style>
+
+<script>
+let currentCalculationId = null;
+
+function filterHistory() {
+    var type = document.getElementById('typeFilter').value;
+    var rows = document.querySelectorAll('#historyTable tbody tr');
+    for (var i = 0; i < rows.length; i++) {
+        var row = rows[i];
+        if (type === '' || row.dataset.type === type) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    }
+}
+
+// Recalculer
+var recalcBtns = document.querySelectorAll('.btn-recalc');
+for (var i = 0; i < recalcBtns.length; i++) {
+    recalcBtns[i].addEventListener('click', function() {
+        var gas = this.dataset.gas;
+        var T = this.dataset.t;
+        var P = this.dataset.p;
+        var type = this.dataset.type;
+        if (type === 'vle') {
+            window.location.href = '/vle?gas=' + encodeURIComponent(gas) + '&T=' + T + '&P=' + P;
+        } else if (type === 'isotherm') {
+            window.location.href = '/isotherms?gas=' + encodeURIComponent(gas) + '&temperatures=' + T;
+        } else if (type === 'z_factor') {
+            window.location.href = '/z-factor?gas=' + encodeURIComponent(gas) + '&T=' + T;
+        } else {
+            window.location.href = '/eos?gas=' + encodeURIComponent(gas) + '&T=' + T + '&P=' + P;
+        }
+    });
+}
+
+// Ouvrir les résultats dans un modal
+var openBtns = document.querySelectorAll('.btn-open');
+for (var i = 0; i < openBtns.length; i++) {
+    openBtns[i].addEventListener('click', function() {
+        var id = this.dataset.id;
+        var type = this.dataset.type;
+        currentCalculationId = id;
+        fetch('/history/recall/' + id)
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    displayResultsInModal(data.calculation, type);
+                } else {
+                    alert('Erreur lors du chargement des résultats');
+                }
+            })
+            .catch(function(error) { alert('Erreur: ' + error.message); });
+    });
+}
+
+function displayResultsInModal(calc, type) {
+    var modalBody = document.getElementById('modalBody');
+    var modalTitle = document.getElementById('modalTitle');
+    var results = calc.results || {};
+    
+    if (type === 'vle') modalTitle.innerHTML = '💧 Résultats VLE';
+    else if (type === 'isotherm') modalTitle.innerHTML = '📈 Résultats Isothermes';
+    else if (type === 'z_factor') modalTitle.innerHTML = '📊 Résultats Facteur Z';
+    else modalTitle.innerHTML = '🔬 Résultats EOS Explorer';
+    
+    var html = '<div class="result-card-modal"><h4>📋 Informations générales</h4><div class="result-grid">' +
+        '<div class="result-item"><div class="label">Gaz</div><div class="value">' + (calc.gas_name || '-') + '</div></div>' +
+        '<div class="result-item"><div class="label">Température</div><div class="value">' + (calc.temperature || '-') + ' <span class="unit">K</span></div></div>' +
+        '<div class="result-item"><div class="label">Pression</div><div class="value">' + (calc.pressure || '-') + ' <span class="unit">bar</span></div></div>' +
+        '</div></div>';
+    
+    if (type === 'z_factor') {
+        var zMin = '-', zMax = '-', zAvg = '-', pRange = '-';
+        if (results.Z && Array.isArray(results.Z) && results.Z.length > 0) {
+            zMin = Math.min.apply(null, results.Z).toFixed(4);
+            zMax = Math.max.apply(null, results.Z).toFixed(4);
+            var sum = 0;
+            for (var i = 0; i < results.Z.length; i++) sum += results.Z[i];
+            zAvg = (sum / results.Z.length).toFixed(4);
+            if (results.P && results.P.length > 0) {
+                pRange = results.P[0].toFixed(1) + ' - ' + results.P[results.P.length-1].toFixed(1) + ' bar';
+            }
+        }
+        var interpretation = '', color = '', icon = '';
+        if (parseFloat(zMin) > 1.05) { interpretation = 'Le gaz présente un comportement répulsif (Z > 1)'; color = '#f59e0b'; icon = '🟡'; }
+        else if (parseFloat(zMax) < 0.95) { interpretation = 'Le gaz présente un comportement attractif (Z < 1)'; color = '#06b6d4'; icon = '🔵'; }
+        else { interpretation = 'Le gaz a un comportement proche de l\'idéal (Z ≈ 1)'; color = '#22c55e'; icon = '✅'; }
+        
+        html += '<div class="result-card-modal"><h4>📊 Analyse du facteur Z</h4><div class="result-grid">' +
+            '<div class="result-item"><div class="label">Z min</div><div class="value" style="color:#06b6d4;">' + zMin + '</div></div>' +
+            '<div class="result-item"><div class="label">Z max</div><div class="value" style="color:#7c3aed;">' + zMax + '</div></div>' +
+            '<div class="result-item"><div class="label">Z moyen</div><div class="value" style="color:#22c55e;">' + zAvg + '</div></div>' +
+            '<div class="result-item"><div class="label">Plage pression</div><div class="value">' + pRange + '</div></div>' +
+            '</div></div>' +
+            '<div class="result-card-modal"><h4>📖 Interprétation</h4><p style="color:' + color + '; padding:12px; background:rgba(0,0,0,0.1); border-radius:8px;">' + icon + ' ' + interpretation + '</p>' +
+            '<p style="margin-top:12px; color:var(--text-soft);">💡 Z=1 signifie un comportement idéal.</p></div>';
+    }
+    else if (type === 'vle' && results.vapor_composition) {
+        html += '<div class="result-card-modal"><h4>💧 Résultats VLE</h4><div class="result-grid">' +
+            '<div class="result-item"><div class="label">Pression de bulle</div><div class="value">' + (results.bubble_pressure ? results.bubble_pressure.toFixed(4) : '-') + ' bar</div></div>' +
+            '<div class="result-item"><div class="label">y₁</div><div class="value">' + (results.vapor_composition ? results.vapor_composition[0].toFixed(4) : '-') + '</div></div>' +
+            '<div class="result-item"><div class="label">γ₁</div><div class="value">' + (results.activity_coefficients ? results.activity_coefficients[0].toFixed(4) : '-') + '</div></div>' +
+            '<div class="result-item"><div class="label">γ₂</div><div class="value">' + (results.activity_coefficients ? results.activity_coefficients[1].toFixed(4) : '-') + '</div></div>' +
+            '</div></div>';
+    }
+    else if (Object.keys(results).length > 0 && (results.ideal_gas || results.pr || results.srk || results.vdw)) {
+        html += '<div class="result-card-modal"><h4>🔬 Comparaison EOS</h4><div class="table-wrap"><table class="results-table"><thead><tr><th>Équation</th><th>Vm (L/mol)</th><th>Z</th><th>Interprétation</th></tr></thead><tbody>';
+        for (var key in results) {
+            var data = results[key];
+            if (data && typeof data === 'object' && data.Vm) {
+                var vm = (data.Vm * 1000).toFixed(5);
+                var z = data.Z.toFixed(5);
+                var interp = '';
+                if (z > 1.05) interp = '🟡 Répulsion';
+                else if (z < 0.95) interp = '🔵 Attraction';
+                else interp = '✅ Quasi-idéal';
+                var badge = '';
+                if (key === 'ideal_gas') badge = 'badge-ideal';
+                else if (key === 'vdw') badge = 'badge-vdw';
+                else if (key === 'srk') badge = 'badge-srk';
+                else if (key === 'pr') badge = 'badge-pr';
+                html += '<tr><td><span class="badge ' + badge + '">' + (data.label || key) + '</span></td><td>' + vm + '</td><td>' + z + '</td><td>' + interp + '</td></tr>';
+            }
+        }
+        html += '</tbody></table></div></div>';
+        if (results.best_eos) {
+            var best = results.best_eos;
+            html += '<div class="result-card-modal"><h4>🏆 Recommandation</h4><div class="result-grid">' +
+                '<div class="result-item"><div class="label">Meilleure EOS</div><div class="value">' + best.label + '</div></div>' +
+                '<div class="result-item"><div class="label">Confiance</div><div class="value">' + (best.confidence || 'Élevée') + '</div></div>' +
+                '<div class="result-item"><div class="label">Z calculé</div><div class="value">' + (best.Z ? best.Z.toFixed(4) : '-') + '</div></div>' +
+                '</div>' + (best.reason ? '<p style="margin-top:12px;">💡 ' + best.reason + '</p>' : '') + '</div>';
+        }
+    }
+    modalBody.innerHTML = html;
+    document.getElementById('resultModal').style.display = 'flex';
+}
+
+// Dupliquer
+var duplicateBtns = document.querySelectorAll('.btn-duplicate');
+for (var i = 0; i < duplicateBtns.length; i++) {
+    duplicateBtns[i].addEventListener('click', function() {
+        var id = this.dataset.id;
+        fetch('/history/duplicate/' + id, { method: 'POST' })
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
+                if (data.success) {
+                    alert('✅ Calcul dupliqué avec succès !');
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la duplication');
+                }
+            })
+            .catch(function(error) { alert('Erreur: ' + error.message); });
+    });
+}
+
+// Exporter PDF (bouton dans le tableau)
+var exportBtns = document.querySelectorAll('.btn-export');
+for (var i = 0; i < exportBtns.length; i++) {
+    exportBtns[i].addEventListener('click', function() {
+        var id = this.dataset.id;
+        window.location.href = '/history/export-pdf/' + id;
+    });
+}
+
+// Exporter PDF depuis le modal
+var modalExportBtn = document.getElementById('modalExportBtn');
+if (modalExportBtn) {
+    modalExportBtn.addEventListener('click', function() {
+        if (currentCalculationId) {
+            window.location.href = '/history/export-pdf/' + currentCalculationId;
+        }
+    });
+}
+
+function closeModal() {
+    document.getElementById('resultModal').style.display = 'none';
+    currentCalculationId = null;
+}
+
+var modal = document.getElementById('resultModal');
+if (modal) {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() { filterHistory(); });
+</script>
+{% endblock %}

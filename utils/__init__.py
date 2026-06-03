@@ -1,0 +1,1 @@
+# EOS Compare — utils package
