@@ -1,0 +1,12 @@
+[build]
+  command = "pip install -r requirements.txt"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/*"
+  to = "/api/:splat"
+  status = 200
+
+[context.production]
+  command = "pip install -r requirements.txt"
+  environment = { PYTHONVERSION = "3.9" }
