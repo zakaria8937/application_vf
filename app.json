@@ -1,0 +1,9 @@
+{
+  "name": "app-thermo",
+  "description": "Thermodynamics Application",
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
